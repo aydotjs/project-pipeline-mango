@@ -4,13 +4,27 @@ phases:
   install:
     runtime-versions:
       nodejs: 18
-  pre_build:
     commands:
       - echo Installing dependencies...
       - npm install
+      
+  pre_build:
+    commands:
+      - echo Running linter...
+      - npm run lint || echo "No lint script found"
+      
   build:
     commands:
+      - echo Running tests...
+      - npm test
       - echo Build completed on `date`
+      
+  post_build:
+    commands:
+      - echo Running smoke tests...
+      - grep -q "CodeDynamer" public/index.html
+      - grep -q "Master Developing" public/index.html
+      - echo All tests passed!
 
 artifacts:
   files:
