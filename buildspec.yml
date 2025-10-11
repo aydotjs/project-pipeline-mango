@@ -23,7 +23,7 @@ phases:
     commands:
       - echo Running smoke tests...
       - grep -q "CodeDynasty" public/index.html
-      - grep -q "Master Devops" public/index.html
+      - grep -q "Software Engineering" public/index.html
       - echo All tests passed!
 
 artifacts:
