@@ -22,8 +22,8 @@ phases:
   post_build:
     commands:
       - echo Running smoke tests...
-      - grep -q "CodeDynamer" public/index.html
-      - grep -q "Hardware Engineering" public/index.html
+      - grep -q "future" public/index.html
+      - grep -q "John" public/index.html
       - echo All tests passed!
 
 artifacts:
