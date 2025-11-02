@@ -6,17 +6,17 @@ phases:
       nodejs: 18
     commands:
       - echo Installing dependencies...
-      - npm install
+      - npm ci
       
   pre_build:
     commands:
-      - echo Running linter...
-      - npm run lint || echo "No lint script found"
+      - echo Running tests with coverage...
+      - npm run test:coverage
       
   build:
     commands:
-      - echo Running tests...
-      - npm test
+      - echo Building application...
+      - npm prune --production
       - echo Build completed on `date`
       
   post_build:
@@ -29,3 +29,4 @@ phases:
 artifacts:
   files:
     - '**/*'
+    - '!node_modules/**/*'

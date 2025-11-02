@@ -4,7 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-   "test": "echo 'Tests passed!' && exit 0",
+    "test": "jest",
+    "test:coverage": "jest --coverage --coverageThreshold='{\"global\":{\"lines\":60,\"statements\":60,\"functions\":20,\"branches\":20}}'",
     "start": "node server.js"
   },
   "keywords": [],
@@ -12,5 +13,9 @@
   "license": "ISC",
   "dependencies": {
     "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4"
   }
 }
