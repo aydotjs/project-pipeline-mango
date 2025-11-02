@@ -26,6 +26,11 @@ phases:
       - grep -q "Jenkins" public/index.html
       - echo All tests passed!
 
+
+cache:
+  paths:
+    - 'node_modules/**/*'
+
 artifacts:
   files:
     - '**/*'
