@@ -5,33 +5,45 @@ phases:
     runtime-versions:
       nodejs: 18
     commands:
-      - echo Installing dependencies...
+      - echo "Installing dependencies..."
       - npm install
-      
+
   pre_build:
     commands:
-      - echo Running tests with coverage...
-      - npm run test:coverage
-      
+      - echo "Fetching parameters for $ENVIRONMENT environment from SSM..."
+      - export NODE_ENV=$(aws ssm get-parameter --name /sour-mango/$ENVIRONMENT/node-env --query 'Parameter.Value' --output text)
+      - export APP_NAME=$(aws ssm get-parameter --name /sour-mango/$ENVIRONMENT/app-name --query 'Parameter.Value' --output text)
+      - export PORT=$(aws ssm get-parameter --name /sour-mango/$ENVIRONMENT/port --query 'Parameter.Value' --output text)
+      - echo "================================================"
+      - echo "Building for Environment - $ENVIRONMENT"
+      - echo "Node Environment - $NODE_ENV"
+      - echo "App Name - $APP_NAME"
+      - echo "Port - $PORT"
+      - echo "================================================"
+
   build:
     commands:
-      - echo Building application...
-      - npm prune --production
-      - echo Build completed on `date`
-      
+      - echo "Creating .env file with environment-specific variables..."
+      - echo "NODE_ENV=$NODE_ENV" > .env
+      - echo "APP_NAME=$APP_NAME" >> .env
+      - echo "PORT=$PORT" >> .env
+      - echo ".env file created successfully!"
+      - echo "Contents of .env file:"
+      - cat .env
+      - echo "Running unit tests with coverage..."
+      - npm test -- --coverage
+
   post_build:
     commands:
-      - echo Running smoke tests...
-      - grep -q "Github" public/index.html
-      - grep -q "Jenkins" public/index.html
-      - echo All tests passed!
-
-
-cache:
-  paths:
-    - 'node_modules/**/*'
+      - echo "Running smoke tests..."
+      - npm run test:smoke
+      - echo "✅ Build completed successfully for $APP_NAME ($ENVIRONMENT)!"
 
 artifacts:
   files:
     - '**/*'
-    - '!node_modules/**/*'
+  name: sour-mango-$ENVIRONMENT-artifact
+
+cache:
+  paths:
+    - 'node_modules/**/*'
