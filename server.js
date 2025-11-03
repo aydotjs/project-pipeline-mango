@@ -35,5 +35,7 @@ if (require.main === module) {
   });
 }
 
-// Export for testing
-module.exports = { createApp };
+// Export both the app instance AND the createApp function
+const app = createApp();
+module.exports = app;              // Default export (for smoke tests)
+module.exports.createApp = createApp;  // Named export (for unit tests)
