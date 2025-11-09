@@ -2,19 +2,19 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 
-// function createApp() {
-//   const app = express();
+function createApp() {
+  const app = express();
   
-//   // Serve static files from public directory
-//   app.use(express.static('public'));
+  // Serve static files from public directory
+  app.use(express.static('public'));
   
-//   // Route for home page
-//   app.get('/', (req, res) => {
-//     res.sendFile(path.join(__dirname, 'public', 'index.html'));
-//   });
+  // Route for home page
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  });
 
-//   return app;
-// }
+  return app;
+}
 
 // Only start the server if this file is run directly (not imported by tests)
 if (require.main === module) {
