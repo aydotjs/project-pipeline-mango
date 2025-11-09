@@ -41,9 +41,25 @@ phases:
 
 artifacts:
   files:
-    - '**/*'
+    - appspec.yml
+    - .env
+    - package.json
+    - package-lock.json
+    - 'public/**/*'
+    - 'scripts/**/*'
+    - server.js
+    - smoke-test.js
+    - app.test.js
+    - index.html
   name: sour-mango-$ENVIRONMENT-artifact
-
+  exclude-paths:
+    - node_modules/**/*
+    - coverage/**/*
+    - __tests__/**/*
+    - .git/**/*
+    - .gitignore
+    - buildspec.yml
+    - sour-mango-v1.zip
 cache:
   paths:
     - 'node_modules/**/*'
