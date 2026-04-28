@@ -1,5 +1,4 @@
 version: 0.2
-
 phases:
   install:
     runtime-versions:
@@ -7,7 +6,6 @@ phases:
     commands:
       - echo "Installing dependencies..."
       - npm install
-
   pre_build:
     commands:
       - echo "Fetching parameters for $ENVIRONMENT environment from SSM..."
@@ -20,7 +18,6 @@ phases:
       - echo "App Name - $APP_NAME"
       - echo "Port - $PORT"
       - echo "================================================"
-
   build:
     commands:
       - echo "Creating .env file with environment-specific variables..."
@@ -32,16 +29,16 @@ phases:
       - cat .env
       - echo "Running unit tests with coverage..."
       - npm test -- --coverage
-
   post_build:
     commands:
       - echo "Running smoke tests..."
       - npm run test:smoke
-      - echo "✅ Build completed successfully for $APP_NAME ($ENVIRONMENT)!"
-
+      - echo "Build completed successfully for $APP_NAME ($ENVIRONMENT)!"
 artifacts:
   files:
     - appspec.yml
+    - appspec-lambda.yml
+    - appspec-ecs.yml
     - .env
     - package.json
     - package-lock.json
