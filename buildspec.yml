@@ -18,6 +18,9 @@ phases:
       - echo "App Name - $APP_NAME"
       - echo "Port - $PORT"
       - echo "================================================"
+      - echo "Getting current Lambda version..."
+      - CURRENT_VERSION=$(aws lambda get-alias --function-name payment-processor --name live --query 'FunctionVersion' --output text)
+      - echo "Current live version is $CURRENT_VERSION"
   build:
     commands:
       - echo "Creating .env file with environment-specific variables..."
@@ -25,14 +28,36 @@ phases:
       - echo "APP_NAME=$APP_NAME" >> .env
       - echo "PORT=$PORT" >> .env
       - echo ".env file created successfully!"
-      - echo "Contents of .env file:"
       - cat .env
+      - echo "Packaging Lambda function..."
+      - zip -j lambda.zip lambda_function.py
       - echo "Running unit tests with coverage..."
       - npm test -- --coverage
   post_build:
     commands:
       - echo "Running smoke tests..."
       - npm run test:smoke
+      - echo "Updating Lambda function code..."
+      - aws lambda update-function-code --function-name payment-processor --zip-file fileb://lambda.zip
+      - aws lambda wait function-updated --function-name payment-processor
+      - echo "Publishing new Lambda version..."
+      - NEW_VERSION=$(aws lambda publish-version --function-name payment-processor --query 'Version' --output text)
+      - echo "New version published - $NEW_VERSION"
+      - echo "Writing dynamic appspec-lambda.yml..."
+      - |
+        cat > appspec-lambda.yml << EOF
+        version: 0.0
+        Resources:
+          - myLambdaFunction:
+              Type: AWS::Lambda::Function
+              Properties:
+                Name: "payment-processor"
+                Alias: "live"
+                CurrentVersion: "$CURRENT_VERSION"
+                TargetVersion: "$NEW_VERSION"
+        EOF
+      - echo "appspec-lambda.yml written successfully"
+      - cat appspec-lambda.yml
       - echo "Build completed successfully for $APP_NAME ($ENVIRONMENT)!"
 artifacts:
   files:
@@ -48,6 +73,7 @@ artifacts:
     - smoke-test.js
     - app.test.js
     - index.html
+    - lambda.zip
   name: sour-mango-$ENVIRONMENT-artifact
   exclude-paths:
     - node_modules/**/*
