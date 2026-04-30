@@ -1,12 +1,9 @@
 version: 0.0
 Resources:
-  - PaymentApiFunction:
+  - myLambdaFunction:
       Type: AWS::Lambda::Function
       Properties:
-        Name: "payment-api-function"
+        Name: "payment-processor"
         Alias: "live"
-        CurrentVersion: !GetAtt PaymentApiFunction.Version
-        TargetVersion: !GetAtt PaymentApiFunction.Version
-Hooks:
-  - BeforeAllowTraffic: "payment-api-pre-hook"
-  - AfterAllowTraffic: "payment-api-post-hook"
+        CurrentVersion: "2"
+        TargetVersion: "2"
