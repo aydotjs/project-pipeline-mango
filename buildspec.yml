@@ -46,8 +46,6 @@ phases:
       - echo "Publishing new Lambda version..."
       - NEW_VERSION=$(aws lambda publish-version --function-name payment-processor --query 'Version' --output text)
       - echo "New version published - $NEW_VERSION"
-
-      # Build EC2 artifact folder
       - echo "Building EC2 artifact..."
       - mkdir -p ec2-artifact
       - cp .env ec2-artifact/
@@ -83,8 +81,6 @@ phases:
               timeout: 30
               runas: root
         EOF
-
-      # Build Lambda artifact folder
       - echo "Building Lambda artifact..."
       - mkdir -p lambda-artifact
       - cp lambda.zip lambda-artifact/
@@ -104,20 +100,17 @@ phases:
       - cat lambda-artifact/appspec.yml
       - echo "Build complete for $APP_NAME ($ENVIRONMENT)!"
 
-# PRIMARY artifact — NO name field, CodePipeline assigns the name
 artifacts:
-  base-directory: ec2-artifact
-  files:
-    - '**/*'
-
-# SECONDARY artifact — identifier must match CodePipeline output artifact name exactly
-secondary-artifacts:
-  lambda-artifact:
-    base-directory: lambda-artifact
-    files:
-      - appspec.yml
-      - lambda.zip
-    name: lambda-artifact
+  secondary-artifacts:
+    BuildArtifact:
+      base-directory: ec2-artifact
+      files:
+        - '**/*'
+    lambda-artifact:
+      base-directory: lambda-artifact
+      files:
+        - appspec.yml
+        - lambda.zip
 
 cache:
   paths:
