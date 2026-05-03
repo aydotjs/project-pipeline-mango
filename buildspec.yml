@@ -40,18 +40,12 @@ phases:
     commands:
       - echo "Running smoke tests..."
       - npm run test:smoke
-
-      # Upload new Lambda code and publish new version
-      # We DO NOT update the alias here — CodeDeploy canary handles traffic shift
       - echo "Uploading new Lambda code..."
       - aws lambda update-function-code --function-name payment-processor --zip-file fileb://lambda.zip
       - aws lambda wait function-updated --function-name payment-processor
       - echo "Publishing new Lambda version..."
       - NEW_VERSION=$(aws lambda publish-version --function-name payment-processor --query 'Version' --output text)
       - echo "New version published - $NEW_VERSION"
-
-      # Build EC2 artifact folder
-      # This becomes the PRIMARY artifact — appspec.yml must be at its root
       - echo "Building EC2 artifact..."
       - mkdir -p ec2-artifact
       - cp .env ec2-artifact/
@@ -87,9 +81,6 @@ phases:
               timeout: 30
               runas: root
         EOF
-
-      # Build Lambda artifact folder
-      # This becomes the SECONDARY artifact — appspec.yml must be at its root
       - echo "Building Lambda artifact..."
       - mkdir -p lambda-artifact
       - cp lambda.zip lambda-artifact/
@@ -109,24 +100,21 @@ phases:
       - cat lambda-artifact/appspec.yml
       - echo "Build complete for $APP_NAME ($ENVIRONMENT)!"
 
-# PRIMARY artifact = EC2 deployment package
-# base-directory means CodeBuild treats ec2-artifact/ as the root
-# so appspec.yml sits at the root of this artifact ✅
+# PRIMARY artifact — name must match CodePipeline output artifact name
 artifacts:
   base-directory: ec2-artifact
   files:
     - '**/*'
-  name: ec2-artifact
+  name: BuildArtifact
 
-# SECONDARY artifact = Lambda deployment package
-# base-directory means appspec.yml sits at root of this artifact ✅
+# SECONDARY artifact — identifier must match CodePipeline output artifact name exactly
 secondary-artifacts:
-  lambda-artifact:
+  BuildArtifact_lambda-artifact:
     base-directory: lambda-artifact
     files:
       - appspec.yml
       - lambda.zip
-    name: lambda-artifact
+    name: BuildArtifact_lambda-artifact
 
 cache:
   paths:
