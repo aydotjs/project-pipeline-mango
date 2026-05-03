@@ -1,9 +1,0 @@
-version: 0.0
-Resources:
-  - myLambdaFunction:
-      Type: AWS::Lambda::Function
-      Properties:
-        Name: "payment-processor"
-        Alias: "live"
-        CurrentVersion: "2"
-        TargetVersion: "2"
