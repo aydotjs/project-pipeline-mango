@@ -3,7 +3,7 @@ Resources:
   - myLambdaFunction:
       Type: AWS::Lambda::Function
       Properties:
-        Name: payment-processor
-        Alias: live
-        CurrentVersion: CURRENT_VERSION_PLACEHOLDER
-        TargetVersion: TARGET_VERSION_PLACEHOLDER
+        Name: "payment-processor"
+        Alias: "live"
+        CurrentVersion: "CURRENT_VERSION_PLACEHOLDER"
+        TargetVersion: "TARGET_VERSION_PLACEHOLDER"
