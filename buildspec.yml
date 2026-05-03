@@ -100,21 +100,19 @@ phases:
       - cat lambda-artifact/appspec.yml
       - echo "Build complete for $APP_NAME ($ENVIRONMENT)!"
 
-# PRIMARY artifact — name must match CodePipeline output artifact name
 artifacts:
   base-directory: ec2-artifact
   files:
     - '**/*'
   name: BuildArtifact
 
-# SECONDARY artifact — identifier must match CodePipeline output artifact name exactly
 secondary-artifacts:
-  BuildArtifact_lambda-artifact:
+  lambda-artifact:
     base-directory: lambda-artifact
     files:
       - appspec.yml
       - lambda.zip
-    name: BuildArtifact_lambda-artifact
+    name: lambda-artifact
 
 cache:
   paths:
