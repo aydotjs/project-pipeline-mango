@@ -1,4 +1,5 @@
 version: 0.2
+
 phases:
   install:
     runtime-versions:
@@ -6,6 +7,7 @@ phases:
     commands:
       - echo "Installing dependencies..."
       - npm install
+
   pre_build:
     commands:
       - echo "Fetching parameters for $ENVIRONMENT environment from SSM..."
@@ -18,34 +20,81 @@ phases:
       - echo "App Name - $APP_NAME"
       - echo "Port - $PORT"
       - echo "================================================"
-      - echo "Getting current Lambda version..."
+      - echo "Getting current Lambda live alias version..."
       - CURRENT_VERSION=$(aws lambda get-alias --function-name payment-processor --name live --query 'FunctionVersion' --output text)
       - echo "Current live version is $CURRENT_VERSION"
+
   build:
     commands:
-      - echo "Creating .env file with environment-specific variables..."
+      - echo "Creating .env file..."
       - echo "NODE_ENV=$NODE_ENV" > .env
       - echo "APP_NAME=$APP_NAME" >> .env
       - echo "PORT=$PORT" >> .env
-      - echo ".env file created successfully!"
       - cat .env
-      - echo "Packaging Lambda function..."
+      - echo "Packaging Lambda zip..."
       - zip -j lambda.zip lambda_function.py
-      - echo "Running unit tests with coverage..."
+      - echo "Running unit tests..."
       - npm test -- --coverage
+
   post_build:
     commands:
       - echo "Running smoke tests..."
       - npm run test:smoke
-      - echo "Updating Lambda function code..."
+
+      # Upload new Lambda code and publish new version
+      # We DO NOT update the alias here — CodeDeploy canary handles traffic shift
+      - echo "Uploading new Lambda code..."
       - aws lambda update-function-code --function-name payment-processor --zip-file fileb://lambda.zip
       - aws lambda wait function-updated --function-name payment-processor
       - echo "Publishing new Lambda version..."
       - NEW_VERSION=$(aws lambda publish-version --function-name payment-processor --query 'Version' --output text)
       - echo "New version published - $NEW_VERSION"
-      - echo "Writing dynamic appspec-lambda.yml..."
+
+      # Build EC2 artifact folder
+      # This becomes the PRIMARY artifact — appspec.yml must be at its root
+      - echo "Building EC2 artifact..."
+      - mkdir -p ec2-artifact
+      - cp .env ec2-artifact/
+      - cp package.json ec2-artifact/
+      - cp package-lock.json ec2-artifact/
+      - cp server.js ec2-artifact/
+      - cp smoke-test.js ec2-artifact/
+      - cp index.html ec2-artifact/ 2>/dev/null || true
+      - cp -r public ec2-artifact/ 2>/dev/null || true
+      - cp -r scripts ec2-artifact/
       - |
-        cat > appspec-lambda.yml << EOF
+        cat > ec2-artifact/appspec.yml << 'EOF'
+        version: 0.0
+        os: linux
+        files:
+          - source: /
+            destination: /home/ec2-user/sour-mango
+        hooks:
+          BeforeInstall:
+            - location: scripts/stop_server.sh
+              timeout: 60
+              runas: root
+          AfterInstall:
+            - location: scripts/install_dependencies.sh
+              timeout: 120
+              runas: root
+          ApplicationStart:
+            - location: scripts/start_server.sh
+              timeout: 60
+              runas: root
+          ValidateService:
+            - location: scripts/validate_service.sh
+              timeout: 30
+              runas: root
+        EOF
+
+      # Build Lambda artifact folder
+      # This becomes the SECONDARY artifact — appspec.yml must be at its root
+      - echo "Building Lambda artifact..."
+      - mkdir -p lambda-artifact
+      - cp lambda.zip lambda-artifact/
+      - |
+        cat > lambda-artifact/appspec.yml << EOF
         version: 0.0
         Resources:
           - myLambdaFunction:
@@ -56,33 +105,29 @@ phases:
                 CurrentVersion: "$CURRENT_VERSION"
                 TargetVersion: "$NEW_VERSION"
         EOF
-      - echo "appspec-lambda.yml written successfully"
-      - cat appspec-lambda.yml
-      - echo "Build completed successfully for $APP_NAME ($ENVIRONMENT)!"
+      - echo "Lambda appspec.yml written:"
+      - cat lambda-artifact/appspec.yml
+      - echo "Build complete for $APP_NAME ($ENVIRONMENT)!"
+
+# PRIMARY artifact = EC2 deployment package
+# base-directory means CodeBuild treats ec2-artifact/ as the root
+# so appspec.yml sits at the root of this artifact ✅
 artifacts:
+  base-directory: ec2-artifact
   files:
-    - appspec.yml
-    - appspec-lambda.yml
-    - appspec-ecs.yml
-    - .env
-    - package.json
-    - package-lock.json
-    - 'public/**/*'
-    - 'scripts/**/*'
-    - server.js
-    - smoke-test.js
-    - app.test.js
-    - index.html
-    - lambda.zip
-  name: sour-mango-$ENVIRONMENT-artifact
-  exclude-paths:
-    - node_modules/**/*
-    - coverage/**/*
-    - __tests__/**/*
-    - .git/**/*
-    - .gitignore
-    - buildspec.yml
-    - sour-mango-v1.zip
+    - '**/*'
+  name: ec2-artifact
+
+# SECONDARY artifact = Lambda deployment package
+# base-directory means appspec.yml sits at root of this artifact ✅
+secondary-artifacts:
+  lambda-artifact:
+    base-directory: lambda-artifact
+    files:
+      - appspec.yml
+      - lambda.zip
+    name: lambda-artifact
+
 cache:
   paths:
     - 'node_modules/**/*'
