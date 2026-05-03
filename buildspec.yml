@@ -42,15 +42,15 @@ phases:
       - cp appspec-ec2.yml ec2-artifact/appspec.yml
       - mkdir -p lambda-artifact
       - cp lambda.zip lambda-artifact/
-      - echo "version: 0.0" > lambda-artifact/appspec.yml
-      - echo "Resources:" >> lambda-artifact/appspec.yml
-      - echo "  - myLambdaFunction:" >> lambda-artifact/appspec.yml
-      - echo "      Type: AWS::Lambda::Function" >> lambda-artifact/appspec.yml
-      - echo "      Properties:" >> lambda-artifact/appspec.yml
-      - echo "        Name: payment-processor" >> lambda-artifact/appspec.yml
-      - echo "        Alias: live" >> lambda-artifact/appspec.yml
-      - echo "        CurrentVersion: $CURRENT_VERSION" >> lambda-artifact/appspec.yml
-      - echo "        TargetVersion: $NEW_VERSION" >> lambda-artifact/appspec.yml
+      - 'echo "version: 0.0" > lambda-artifact/appspec.yml'
+      - 'echo "Resources:" >> lambda-artifact/appspec.yml'
+      - 'echo "  - myLambdaFunction:" >> lambda-artifact/appspec.yml'
+      - 'echo "      Type: AWS::Lambda::Function" >> lambda-artifact/appspec.yml'
+      - 'echo "      Properties:" >> lambda-artifact/appspec.yml'
+      - 'echo "        Name: payment-processor" >> lambda-artifact/appspec.yml'
+      - 'echo "        Alias: live" >> lambda-artifact/appspec.yml'
+      - 'echo "        CurrentVersion: $CURRENT_VERSION" >> lambda-artifact/appspec.yml'
+      - 'echo "        TargetVersion: $NEW_VERSION" >> lambda-artifact/appspec.yml'
       - cat lambda-artifact/appspec.yml
 
 artifacts:
