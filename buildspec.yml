@@ -46,18 +46,25 @@ phases:
       - echo "Publishing new Lambda version..."
       - NEW_VERSION=$(aws lambda publish-version --function-name payment-processor --query 'Version' --output text)
       - echo "New version published - $NEW_VERSION"
-      - echo "Building EC2 artifact..."
-      - mkdir -p ec2-artifact
-      - cp .env ec2-artifact/
-      - cp package.json ec2-artifact/
-      - cp package-lock.json ec2-artifact/
-      - cp server.js ec2-artifact/
-      - cp smoke-test.js ec2-artifact/
-      - cp index.html ec2-artifact/ 2>/dev/null || true
-      - cp -r public ec2-artifact/ 2>/dev/null || true
-      - cp -r scripts ec2-artifact/
+
+      # Build the SINGLE artifact folder with everything inside
+      - echo "Building combined artifact..."
+      - mkdir -p artifact/ec2
+      - mkdir -p artifact/lambda
+
+      # Copy EC2 app files into artifact/ec2/
+      - cp .env artifact/ec2/
+      - cp package.json artifact/ec2/
+      - cp package-lock.json artifact/ec2/
+      - cp server.js artifact/ec2/
+      - cp smoke-test.js artifact/ec2/
+      - cp index.html artifact/ec2/ 2>/dev/null || true
+      - cp -r public artifact/ec2/ 2>/dev/null || true
+      - cp -r scripts artifact/ec2/
+
+      # Write EC2 appspec into artifact/ec2/
       - |
-        cat > ec2-artifact/appspec.yml << 'EOF'
+        cat > artifact/ec2/appspec.yml << 'EOF'
         version: 0.0
         os: linux
         files:
@@ -81,11 +88,13 @@ phases:
               timeout: 30
               runas: root
         EOF
-      - echo "Building Lambda artifact..."
-      - mkdir -p lambda-artifact
-      - cp lambda.zip lambda-artifact/
+
+      # Copy Lambda zip into artifact/lambda/
+      - cp lambda.zip artifact/lambda/
+
+      # Write Lambda appspec into artifact/lambda/
       - |
-        cat > lambda-artifact/appspec.yml << EOF
+        cat > artifact/lambda/appspec.yml << EOF
         version: 0.0
         Resources:
           - myLambdaFunction:
@@ -97,22 +106,15 @@ phases:
                 TargetVersion: "$NEW_VERSION"
         EOF
       - echo "Lambda appspec.yml written:"
-      - cat lambda-artifact/appspec.yml
+      - cat artifact/lambda/appspec.yml
       - echo "Build complete for $APP_NAME ($ENVIRONMENT)!"
 
+# ONE artifact containing both ec2/ and lambda/ folders
 artifacts:
-  base-directory: ec2-artifact
+  base-directory: artifact
   files:
     - '**/*'
   name: BuildArtifact
-
-secondary-artifacts:
-  lambda-artifact:
-    base-directory: lambda-artifact
-    files:
-      - appspec.yml
-      - lambda.zip
-    name: lambda-artifact
 
 cache:
   paths:
