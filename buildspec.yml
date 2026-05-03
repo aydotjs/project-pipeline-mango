@@ -46,6 +46,7 @@ phases:
       - echo "Publishing new Lambda version..."
       - NEW_VERSION=$(aws lambda publish-version --function-name payment-processor --query 'Version' --output text)
       - echo "New version published - $NEW_VERSION"
+
       - echo "Building EC2 artifact..."
       - mkdir -p ec2-artifact
       - cp .env ec2-artifact/
@@ -56,46 +57,14 @@ phases:
       - cp index.html ec2-artifact/ 2>/dev/null || true
       - cp -r public ec2-artifact/ 2>/dev/null || true
       - cp -r scripts ec2-artifact/
-      - |
-        cat > ec2-artifact/appspec.yml << 'EOF'
-        version: 0.0
-        os: linux
-        files:
-          - source: /
-            destination: /home/ec2-user/sour-mango
-        hooks:
-          BeforeInstall:
-            - location: scripts/stop_server.sh
-              timeout: 60
-              runas: root
-          AfterInstall:
-            - location: scripts/install_dependencies.sh
-              timeout: 120
-              runas: root
-          ApplicationStart:
-            - location: scripts/start_server.sh
-              timeout: 60
-              runas: root
-          ValidateService:
-            - location: scripts/validate_service.sh
-              timeout: 30
-              runas: root
-        EOF
+      - printf 'version: 0.0\nos: linux\nfiles:\n  - source: /\n    destination: /home/ec2-user/sour-mango\nhooks:\n  BeforeInstall:\n    - location: scripts/stop_server.sh\n      timeout: 60\n      runas: root\n  AfterInstall:\n    - location: scripts/install_dependencies.sh\n      timeout: 120\n      runas: root\n  ApplicationStart:\n    - location: scripts/start_server.sh\n      timeout: 60\n      runas: root\n  ValidateService:\n    - location: scripts/validate_service.sh\n      timeout: 30\n      runas: root\n' > ec2-artifact/appspec.yml
+      - echo "EC2 appspec.yml written:"
+      - cat ec2-artifact/appspec.yml
+
       - echo "Building Lambda artifact..."
       - mkdir -p lambda-artifact
       - cp lambda.zip lambda-artifact/
-      - |
-        cat > lambda-artifact/appspec.yml << EOF
-        version: 0.0
-        Resources:
-          - myLambdaFunction:
-              Type: AWS::Lambda::Function
-              Properties:
-                Name: "payment-processor"
-                Alias: "live"
-                CurrentVersion: "$CURRENT_VERSION"
-                TargetVersion: "$NEW_VERSION"
-        EOF
+      - printf 'version: 0.0\nResources:\n  - myLambdaFunction:\n      Type: AWS::Lambda::Function\n      Properties:\n        Name: "payment-processor"\n        Alias: "live"\n        CurrentVersion: "%s"\n        TargetVersion: "%s"\n' "$CURRENT_VERSION" "$NEW_VERSION" > lambda-artifact/appspec.yml
       - echo "Lambda appspec.yml written:"
       - cat lambda-artifact/appspec.yml
       - echo "Build complete for $APP_NAME ($ENVIRONMENT)!"
