@@ -29,10 +29,13 @@ async function refreshConfig() {
     const response = await client.send(command);
     sessionToken = response.NextPollConfigurationToken;
 
-    const text = Buffer.from(response.Configuration).toString("utf-8");
-    if (text) {
-      cachedConfig = JSON.parse(text);
-      console.log("🔄 Config refreshed:", cachedConfig);
+    // ✅ fixed — check before converting
+    if (response.Configuration && response.Configuration.length > 0) {
+      const text = Buffer.from(response.Configuration).toString("utf-8");
+      if (text) {
+        cachedConfig = JSON.parse(text);
+        console.log("🔄 Config refreshed:", cachedConfig);
+      }
     }
   } catch (err) {
     console.error("⚠️ AppConfig failed, using cached config:", err.message);
