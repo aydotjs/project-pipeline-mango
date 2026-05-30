@@ -1,6 +1,6 @@
 const { AppConfigDataClient, StartConfigurationSessionCommand, GetLatestConfigurationCommand } = require("@aws-sdk/client-appconfigdata");
 
-const client = new AppConfigDataClient({ region: process.env.AWS_REGION || "us-east-1" });
+const client = new AppConfigDataClient({ region: "eu-north-1" });
 
 let sessionToken = null;
 let cachedConfig = {
