@@ -1,20 +1,30 @@
-function createApp() {
-  const app = express();
+require('dotenv').config();
+const express = require('express');
+const path = require('path');
+const { refreshConfig, getConfig } = require('./appconfig');
 
-  // ✅ Route FIRST — checks maintenance mode before serving anything
-  app.get('/', (req, res) => {
-    const config = getConfig();
-    console.log('🔍 Current config on request:', config);
-    
-    if (config.maintenance_mode) {
-      return res.sendFile(path.join(__dirname, 'public', 'maintenance.html'));
-    }
+const app = express();
 
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-  });
+app.get('/', (req, res) => {
+  const config = getConfig();
+  console.log('🔍 Config on request:', config);
 
-  // ✅ Static files AFTER — for CSS, JS, images etc
-  app.use(express.static('public'));
+  if (config.maintenance_mode) {
+    return res.sendFile(path.join(__dirname, 'public', 'maintenance.html'));
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
-  return app;
-}
+app.use(express.static('public'));
+
+const PORT = process.env.PORT || 8080;
+
+refreshConfig().then(() => {
+  setInterval(refreshConfig, 30_000);
+  app.listen(PORT, () => console.log(`🚀 Running on port ${PORT}`));
+}).catch(err => {
+  console.error('Failed to start:', err);
+  process.exit(1);
+});
+
+module.exports = app;
